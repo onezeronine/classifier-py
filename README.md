@@ -4,8 +4,6 @@ Runs on Python 3.6. This programs classifies gender based on the first name. Use
 
 You can check the dataset on __names.csv__ file.
 
-If you want to get random results, uncomment the `random.shuffle(r)` in `extractData`.
-
 How to run on interactive python shell.
 
 ```sh
