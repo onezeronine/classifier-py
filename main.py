@@ -5,7 +5,7 @@ from operator import itemgetter
 def extractData(fileName):
     csvFile = open(fileName, "r")
     r = csvFile.read().split("\n")
-    # random.shuffle(r)
+    random.shuffle(r)
     li = []
     for kvp in set(filter(None, r)):
         pair = kvp.lower().split(",")
@@ -42,19 +42,19 @@ for feature in trainingFeatureList:
     if feature[1] in model[featureClass]: model[featureClass][feature[1]] += 1
     else: model[featureClass][feature[1]] = 0
 
-# Classify based on the featureList
+# Classify the extracted features from the name
 def classifyFeatureList(nameFeatureList):
     scores = []
     featureSet = set(trainingFeatureList)
     vocabularyCount = len(list(featureSet))
     for c in classes:
-        score = 1
+        score = len([x for x in trainingSet if x[1] == c]) / len(trainingSet)
         countOfFeaturesInTheClass = len([x for x in trainingFeatureList if x[0] == c])
         for nf in nameFeatureList:
            featFrequencyPerClass = 0
            if nf in model[c]: featFrequencyPerClass = model[c][nf]
 
-           score *= featFrequencyPerClass + 1 / countOfFeaturesInTheClass + vocabularyCount
+           score *= featFrequencyPerClass + 1 / countOfFeaturesInTheClass + vocabularyCount + 1
         scores.append((c, score))
     return max(scores, key=itemgetter(1))[0]
 
@@ -83,5 +83,5 @@ def test():
         recall = (numerator / recallDenominator)
         f = (2 * precision * recall) / (precision + recall)
         print('Precision(' + c1 + ') => ' + str(precision))
-        print('Recall(' + c1 + ') => ' + str(recall))
-        print('F(' + c1 + ') => ' + str(f))
+        print('Recall(' + c1 + ')    => ' + str(recall))
+        print('F(' + c1 + ')         => ' + str(f))
