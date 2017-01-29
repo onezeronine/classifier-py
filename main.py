@@ -5,7 +5,7 @@ from operator import itemgetter
 def extractData(fileName):
     csvFile = open(fileName, "r")
     r = csvFile.read().split("\n")
-    random.shuffle(r)
+    # random.shuffle(r)
     li = []
     for kvp in set(filter(None, r)):
         pair = kvp.lower().split(",")
@@ -22,44 +22,66 @@ def extractFeatures(fi):
         features.append("count("+c+")=" + str(fi.count(c)))
     return features
 
-def classify(classes, model, length, featureList):
-    scores = []
-    for c in classes:
-        score = 1
-        for feature in featureList:
-            n = 0
-            if feature in model[c]:
-                n = model[c][feature]
-            score *= n + 1 / length + 1
-        scores.append((c, score))
+# extract the names and classes from the .csv file
+data        = extractData('names.csv')
+classes     = set([f[1] for f in data])
+n           = int(len(data) / 5) * 4
 
-    return max(scores, key=itemgetter(1))[0]
+# divide the data into 4/5 into training set, 1/5 into test set
+trainingSet = data[:n]
+testSet     = data[n:]
 
-###########################################
-
-data = extractData('names.csv')
-classes = set([f[1] for f in data])
-
-# extract the features
-featureList = [(name[1], i) for name in data for i in extractFeatures(name[0])]
-n = int(len(featureList) / 5) * 4
-
-# divide the training and test sets
-trainingSet = featureList[:n]
-testSet = featureList[n:]
+# flatten the features into a list
+trainingFeatureList = [(name[1], i) for name in trainingSet for i in extractFeatures(name[0])]
 
 # set the frequencies of each feature by class
 model = dict()
-totalCount = len(trainingSet)
-for c in classes:
-    model[c] = dict()
-for feature in featureList:
-    clss = feature[0]
-    if feature[1] in model[clss]:
-        model[clss][feature[1]] += 1
-    else:
-        model[clss][feature[1]] = 0
+for c in classes: model[c] = dict()
+for feature in trainingFeatureList:
+    featureClass = feature[0]
+    if feature[1] in model[featureClass]: model[featureClass][feature[1]] += 1
+    else: model[featureClass][feature[1]] = 0
 
-names = ['john', 'vanessa', 'carrie', 'phillip', 'kenneth', 'patricia', 'antonio', 'precious']
-for name in names:
-    print(name, classify(classes, model, totalCount, extractFeatures(name)))
+# Classify based on the featureList
+def classifyFeatureList(nameFeatureList):
+    scores = []
+    featureSet = set(trainingFeatureList)
+    vocabularyCount = len(list(featureSet))
+    for c in classes:
+        score = 1
+        countOfFeaturesInTheClass = len([x for x in trainingFeatureList if x[0] == c])
+        for nf in nameFeatureList:
+           featFrequencyPerClass = 0
+           if nf in model[c]: featFrequencyPerClass = model[c][nf]
+
+           score *= featFrequencyPerClass + 1 / countOfFeaturesInTheClass + vocabularyCount
+        scores.append((c, score))
+    return max(scores, key=itemgetter(1))[0]
+
+# Use for the UI
+def classify(name):
+    print(classifyFeatureList(extractFeatures(name)))
+
+def test():
+    evaluationResult = dict()
+    for c1 in classes:
+        evaluationResult[c1] = dict([(x, 0) for x in classes])
+
+    for name in testSet:
+        assignedClass = classifyFeatureList(extractFeatures(name[0]))
+        trueClass = name[1]
+        evaluationResult[trueClass][assignedClass] += 1
+
+    for c1 in classes:
+        numerator = evaluationResult[c1][c1];
+        precisionDenominator = 0;
+        recallDenominator = 0;
+        for c2 in classes:
+            precisionDenominator += evaluationResult[c2][c1]
+            recallDenominator += evaluationResult[c1][c2]
+        precision = (numerator / precisionDenominator)
+        recall = (numerator / recallDenominator)
+        f = (2 * precision * recall) / (precision + recall)
+        print('Precision(' + c1 + ') => ' + str(precision))
+        print('Recall(' + c1 + ') => ' + str(recall))
+        print('F(' + c1 + ') => ' + str(f))
