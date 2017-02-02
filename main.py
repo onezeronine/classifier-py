@@ -54,7 +54,7 @@ def classifyFeatureList(nameFeatureList):
            featFrequencyPerClass = 0
            if nf in model[c]: featFrequencyPerClass = model[c][nf]
 
-           score *= featFrequencyPerClass + 1 / countOfFeaturesInTheClass + vocabularyCount + 1
+           score *= (featFrequencyPerClass + 1) / (countOfFeaturesInTheClass + vocabularyCount + 1)
         scores.append((c, score))
     return max(scores, key=itemgetter(1))[0]
 
